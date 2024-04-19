@@ -74932,18 +74932,26 @@ const getCiBuildId = async () => {
       auth: GITHUB_TOKEN
     })
 
-    const resp = await client.request(
-      'GET /repos/:owner/:repo/actions/runs/:run_id',
-      {
-        owner,
-        repo,
-        run_id: parseInt(GITHUB_RUN_ID)
-      }
-    )
+    try {
+      debug('MODAC: GET /repos/:owner/:repo/actions/runs/:run_id')
 
-    if (resp && resp.data && resp.data.head_branch) {
-      branch = resp.data.head_branch
-      debug(`found the branch name ${branch}`)
+      const resp = await client.request(
+        'GET /repos/:owner/:repo/actions/runs/:run_id',
+        {
+          owner,
+          repo,
+          run_id: parseInt(GITHUB_RUN_ID)
+        }
+      )
+
+      if (resp && resp.data && resp.data.head_branch) {
+        branch = resp.data.head_branch
+        debug(`found the branch name ${branch}`)
+      }
+    } catch (e) {
+      debug(e)
+      console.error(e)
+      throw new Error(e)
     }
 
     // This will return the complete list of jobs for a run with their steps,
@@ -74952,26 +74960,37 @@ const getCiBuildId = async () => {
     // (because the same amount of jobs were ran) but the id of them should change
     // letting us, select the first id as unique id
     // https://docs.github.com/en/rest/reference/actions#list-jobs-for-a-workflow-run
-    const runsList = await client.request(
-      'GET /repos/:owner/:repo/actions/runs/:run_id/jobs',
-      {
-        owner,
-        repo,
-        run_id: parseInt(GITHUB_RUN_ID)
-      }
-    )
 
-    if (
-      runsList &&
-      runsList.data &&
-      runsList.data.jobs &&
-      runsList.data.jobs.length
-    ) {
-      const jobId = runsList.data.jobs[0].id
-      debug(`fetched run list with jobId ${jobId}`)
-      buildId = `${GITHUB_RUN_ID}-${jobId}`
-    } else {
-      debug('could not get run list data')
+    try {
+      debug(
+        'MODAC: GET /repos/:owner/:repo/actions/runs/:run_id/jobs'
+      )
+
+      const runsList = await client.request(
+        'GET /repos/:owner/:repo/actions/runs/:run_id/jobs',
+        {
+          owner,
+          repo,
+          run_id: parseInt(GITHUB_RUN_ID)
+        }
+      )
+
+      if (
+        runsList &&
+        runsList.data &&
+        runsList.data.jobs &&
+        runsList.data.jobs.length
+      ) {
+        const jobId = runsList.data.jobs[0].id
+        debug(`fetched run list with jobId ${jobId}`)
+        buildId = `${GITHUB_RUN_ID}-${jobId}`
+      } else {
+        debug('could not get run list data')
+      }
+    } catch (e) {
+      debug(e)
+      console.error(e)
+      throw new Error(e)
     }
   }
 
